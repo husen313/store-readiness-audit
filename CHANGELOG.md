@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2 — 2026-09-29
+
+- HTML report opens in the light theme by default (no longer follows the system theme), with a 🌙 Dark / ☀️ Light toggle that the browser remembers
+
 ## 1.0.1 — 2026-09-29
 
 - Visual HTML report (`audit/report.html`): verdict banner, per-store scores, plain-language check cards with "why it matters" and copyable fixes, filters, clickable `file:line` links (VS Code / Cursor / Windsurf), and a tickable "outside the code" checklist. Works offline, light and dark mode.

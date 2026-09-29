@@ -1,13 +1,13 @@
 {
   "name": "store-readiness-audit",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Audit a Flutter app's code against Apple App Store Review Guidelines and Google Play policies before upload. Lists every check as pass / fail / warn / manual with file:line evidence and fixes.",
   "author": {
     "name": "Husen",
-    "url": "https://github.com/YOUR_GITHUB_USERNAME"
+    "url": "https://github.com/husen313"
   },
-  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/store-readiness-audit",
-  "repository": "https://github.com/YOUR_GITHUB_USERNAME/store-readiness-audit",
+  "homepage": "https://github.com/husen313/store-readiness-audit",
+  "repository": "https://github.com/husen313/store-readiness-audit",
   "license": "MIT",
   "keywords": ["flutter", "app-store", "google-play", "ios", "android", "release", "audit", "app-review"]
 }
