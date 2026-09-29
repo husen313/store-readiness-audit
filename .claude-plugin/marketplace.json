@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Pre-upload App Store and Google Play compliance audit for Flutter apps.",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "plugins": [
     {
       "name": "store-readiness-audit",
       "source": "./",
       "description": "Audit a Flutter app against App Store and Google Play rules before upload.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "category": "development",
       "tags": ["flutter", "mobile", "app-store", "google-play", "release"]
     }

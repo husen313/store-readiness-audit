@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 — 2026-09-29
 
 - Visual HTML report (`audit/report.html`): verdict banner, per-store scores, plain-language check cards with "why it matters" and copyable fixes, filters, clickable `file:line` links (VS Code / Cursor / Windsurf), and a tickable "outside the code" checklist. Works offline, light and dark mode.
 - Plain-language titles and explanations for every check (`plain` and `why` fields in `report.json`)
