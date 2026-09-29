@@ -16,6 +16,32 @@ Claude: ❌ NOT READY — 4 blockers
 
 The results also come as a **visual report** (`audit/report.html`) that opens in any browser. It has a verdict banner, a score for each store, plain-language cards that explain *why* each check matters and how to fix it, clickable `file:line` links that open in your editor, and a pre-submission checklist you can tick off. See a [sample scanner output](docs/sample-report.md).
 
+## Features
+
+- 🍎 **App Store checks**: Bundle ID, icons, privacy manifest, permission purpose strings, Sign in with Apple, account deletion, Restore Purchases, paywall legal links, AI consent, and more.
+- 🤖 **Google Play checks**: targetSdk, release signing, debuggable builds, restricted permissions (including ones plugins add), Play Billing, account deletion, cleartext traffic.
+- 🚦 **Clear results**: every check is ✅ PASS, ❌ FAIL, ⚠️ WARN, or 🔍 MANUAL, with blockers listed first.
+- 📍 **Evidence and fixes**: each finding shows the `file:line` where it was found and a concrete fix.
+- 🔎 **Two-step verification**: a Python scanner runs ~35 deterministic checks, then Claude reads the code to confirm each result and trace flows a script can't judge.
+- 🛡️ **Strict against false passes**: comments are ignored, labels must be visible strings, and Android permissions come from the merged release manifest.
+- 📊 **Visual HTML report**: verdict banner, per-store scores, plain-language cards, clickable `file:line` links, and a light/dark theme.
+- ☑️ **Pre-submission checklist**: tick off items that live outside the code, such as privacy labels, Data safety, screenshots, age ratings, and closed testing.
+- 🔄 **Rebuild without rescanning**: edit `audit/report.json` and run `--render` to regenerate the reports.
+- 📅 **Up-to-date rules**: each rules file has a "last verified" date, and Claude searches for newer policy changes when it gets old.
+- 🛠️ **Fixes on request**: after the report, Claude offers to apply the fixes for you.
+- 🧩 **Works in many agents**: Claude Code, Claude app, Cursor, Codex, Windsurf, Antigravity, and others.
+
+## How it helps developers
+
+- ⏱️ **Saves review cycles**: catch common rejection causes before you submit, instead of waiting days for a rejection email.
+- 📚 **No guideline reading marathon**: store rules are already mapped to checks on your code.
+- 🎯 **Fast fixes**: every problem points to the exact file and line, with the change to make.
+- 🔌 **Catches hidden plugin issues**: finds permissions that plugins add to the final manifest, which you never wrote yourself.
+- 📆 **Keeps you ahead of deadlines**: tracks changes like Google's yearly target API increase and Apple's guideline updates.
+- 👥 **Easy to share**: the HTML report is readable by PMs, QA, and clients, not just developers.
+- ✅ **Nothing forgotten on launch day**: the checklist covers store console tasks too.
+- ⚙️ **Runs on its own**: the scanner is plain Python, so you can run it without an AI tool or add it to a build pipeline.
+
 ## What it checks
 
 | Area        | App Store                                                                                                   | Google Play                                                                             |
