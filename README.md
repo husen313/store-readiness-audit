@@ -18,14 +18,14 @@ See a [sample scanner output](docs/sample-report.md).
 
 ## What it checks
 
-| Area | App Store | Google Play |
-|---|---|---|
-| Build | Bundle ID, 1024 icon (no alpha), default Flutter icon, export compliance, privacy manifest, Firebase config | applicationId, **targetSdk ≥ 36**, debug-signed release, debuggable, default icon |
-| Permissions | Purpose strings for every plugin you use (missing or vague) | Restricted permissions (incl. ones plugins add), Photo & Video policy, AD_ID |
-| Accounts | Sign in with Apple (4.8), in-app account deletion (5.1.1v), demo account | Account deletion |
-| Payments | Restore Purchases, Terms/EULA + Privacy on the paywall (3.1.2), external payment SDKs | Play Billing |
-| AI features | Consent before sending data to third-party AI (5.1.2i), report button, hardcoded API keys | AI-generated content reporting |
-| Quality | Placeholder text, debug URLs/banners, WebView-only apps (4.2), background modes, ATS | Cleartext traffic |
+| Area        | App Store                                                                                                   | Google Play                                                                             |
+| ----------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Build       | Bundle ID, 1024 icon (no alpha), default Flutter icon, export compliance, privacy manifest, Firebase config | applicationId,**targetSdk ≥ 36**, debug-signed release, debuggable, default icon |
+| Permissions | Purpose strings for every plugin you use (missing or vague)                                                 | Restricted permissions (incl. ones plugins add), Photo & Video policy, AD_ID            |
+| Accounts    | Sign in with Apple (4.8), in-app account deletion (5.1.1v), demo account                                    | Account deletion                                                                        |
+| Payments    | Restore Purchases, Terms/EULA + Privacy on the paywall (3.1.2), external payment SDKs                       | Play Billing                                                                            |
+| AI features | Consent before sending data to third-party AI (5.1.2i), report button, hardcoded API keys                   | AI-generated content reporting                                                          |
+| Quality     | Placeholder text, debug URLs/banners, WebView-only apps (4.2), background modes, ATS                        | Cleartext traffic                                                                       |
 
 The report also lists what code can't prove, such as privacy labels, Data safety, screenshots, age ratings, and closed-testing requirements, so nothing gets forgotten.
 
@@ -51,8 +51,23 @@ A false ✅ sends you into review with a hidden problem, so the scanner is delib
 ### Claude Code (plugin)
 
 ```
-/plugin marketplace add YOUR_GITHUB_USERNAME/store-readiness-audit
+/plugin marketplace add husen313/store-readiness-audit
 /plugin install store-readiness-audit@store-readiness-audit
+```
+
+### Cursor, Codex, Windsurf, Antigravity (and other agents)
+
+One command, using the open [skills](https://skills.sh) CLI:
+
+```bash
+npx skills add husen313/store-readiness-audit
+```
+
+It detects which agents you have and installs the skill into each one's skills folder. To pick agents or install for all projects:
+
+```bash
+npx skills add husen313/store-readiness-audit --agent cursor codex windsurf antigravity
+npx skills add husen313/store-readiness-audit -g   # global
 ```
 
 ### Claude app (claude.ai, desktop, mobile)
@@ -101,6 +116,7 @@ bash tools/package_skill.sh     # builds dist/store-readiness-audit.skill
 CI runs the tests on every push. Pushing a tag like `v1.0.1` publishes a release with the `.skill` file attached.
 
 When adding a check:
+
 1. Add it to `scan_app.py` with a stable ID.
 2. Document it in `references/`.
 3. Add expected results to both fixtures in `tests/run_tests.py`. If a naive version of the check could false-PASS, add that case to the trap project.
