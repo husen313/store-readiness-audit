@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Visual HTML report (`audit/report.html`): verdict banner, per-store scores, plain-language check cards with "why it matters" and copyable fixes, filters, clickable `file:line` links (VS Code / Cursor / Windsurf), and a tickable "outside the code" checklist. Works offline, light and dark mode.
+- Plain-language titles and explanations for every check (`plain` and `why` fields in `report.json`)
+- `--render` rebuilds `report.md` / `report.html` from an edited `report.json`, so the agent's verified corrections show up in the visual report
+- Colored terminal verdict with the list of blockers
+- Install for Cursor, Codex, Windsurf and Antigravity with `npx skills add`
+
 ## 1.0.0 — 2026-09-29
 
 First public release.

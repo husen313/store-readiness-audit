@@ -31,7 +31,7 @@ Never mark something PASS without evidence you actually saw. When unsure, use WA
 ```bash
 python3 <skill-dir>/scripts/scan_app.py <project-root> --store both --out <work-dir>/audit
 ```
-`<skill-dir>` is this skill's folder (in Claude Code: `${CLAUDE_SKILL_DIR}`). Use `--store ios` or `--store android` to narrow. It writes `audit/report.json` and `audit/report.md` and prints a summary. The scanner covers deterministic checks: permission strings vs plugins, privacy manifest, bundle IDs, release signing, target SDK, dangerous permissions, cleartext traffic, restore purchases, account deletion signals, login options, ATT, export compliance, placeholder content, and more.
+`<skill-dir>` is this skill's folder (in Claude Code: `${CLAUDE_SKILL_DIR}`). Use `--store ios` or `--store android` to narrow. It writes `audit/report.json`, `audit/report.md` and `audit/report.html` (a visual report for the user) and prints a summary. The scanner covers deterministic checks: permission strings vs plugins, privacy manifest, bundle IDs, release signing, target SDK, dangerous permissions, cleartext traffic, restore purchases, account deletion signals, login options, ATT, export compliance, placeholder content, and more.
 
 The scanner uses text heuristics, so treat its output as a strong first pass, not the final word. How it avoids false PASS results:
 - Dart comments are stripped before matching, so `// TODO: restorePurchases()` never counts as evidence.
@@ -50,6 +50,11 @@ Read `references/apple_checks.md` and/or `references/google_play_checks.md` for 
 
 Cite `path/to/file.dart:LINE` for every finding you change or add.
 
+Then write your corrections back into `audit/report.json`: change `status` where you up- or downgraded a check, add a `note` with what you verified (include `file:LINE`), and append any new findings with the same fields (`id`, `store`, `title`, `plain`, `why`, `guideline`, `status`, `evidence`, `fix`). Rebuild the visual report so it matches your verdict:
+```bash
+python3 <skill-dir>/scripts/scan_app.py <project-root> --out <work-dir>/audit --render
+```
+
 ### 4. Write the report
 Use `assets/report_template.md` as the exact structure. Required parts:
 1. **Verdict** — one line: `READY`, `READY WITH WARNINGS`, or `NOT READY (N blockers)`.
@@ -58,7 +63,7 @@ Use `assets/report_template.md` as the exact structure. Required parts:
 4. **Full checklist table** per store: ID, check, guideline, status, evidence, fix.
 5. **Outside the code** — items that live in App Store Connect / Play Console (privacy labels, Data safety form, screenshots, review notes, demo account, age rating, content rating). Always include this section; many rejections come from metadata, not code.
 
-Save the report as a Markdown file (e.g., `store-audit-<app>-<date>.md`) in the user's output location — the project root in Claude Code, or the outputs folder on claude.ai — and share it. Keep the chat reply short: verdict, blocker count, top 3 fixes.
+Save the report as a Markdown file (e.g., `store-audit-<app>-<date>.md`) in the user's output location — the project root in coding agents (Claude Code, Cursor, Codex, Windsurf, Antigravity…), or the outputs folder on claude.ai — and share it. Keep the chat reply short: verdict, blocker count, top 3 fixes, and point the user to the visual report `audit/report.html` — the easiest way to read the results (verdict banner, per-store score, plain-language cards with fixes, clickable `file:line` links, and a submission checklist). If you can open files for the user (e.g. `open` on macOS, `xdg-open` on Linux, `start` on Windows), open it; on claude.ai, share it from the outputs folder.
 
 ### 5. Offer fixes
 After the report, offer to apply the fixes (add missing Info.plist keys, create `PrivacyInfo.xcprivacy`, add a Restore button, fix release signing). Apply only what the user approves.

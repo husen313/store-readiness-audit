@@ -192,6 +192,12 @@ def main():
         exp.update({"IOS-031": "PASS", "AND-020": "PASS"})
     fails += expect(scan(FIX / "clean", "clean"), exp, "clean")
 
+    print("HTML report")
+    html = (OUT / "trap" / "report.html").read_text()
+    ok = "/*__REPORT_DATA__*/null" not in html and '"id": "GEN-020"' in html and "</script" not in html.split("const DATA")[1].split("\n")[0]
+    fails += not ok
+    print(f"  {'✅' if ok else '❌'} report.html has the scan data embedded")
+
     print(f"\n{'ALL TESTS PASSED' if not fails else f'{fails} TEST(S) FAILED'}")
     sys.exit(1 if fails else 0)
 

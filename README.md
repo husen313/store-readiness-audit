@@ -14,7 +14,7 @@ Claude: ❌ NOT READY — 4 blockers
         Full report: store-audit-myapp-2026-09-29.md
 ```
 
-See a [sample scanner output](docs/sample-report.md).
+The results also come as a **visual report** (`audit/report.html`) that opens in any browser. It has a verdict banner, a score for each store, plain-language cards that explain *why* each check matters and how to fix it, clickable `file:line` links that open in your editor, and a pre-submission checklist you can tick off. See a [sample scanner output](docs/sample-report.md).
 
 ## What it checks
 
@@ -33,7 +33,7 @@ The report also lists what code can't prove, such as privacy labels, Data safety
 
 1. **Scanner** (`scripts/scan_app.py`, pure Python) runs ~35 deterministic checks on the project.
 2. **Claude verifies** each finding in your code and traces flows a script can't judge: whether the Restore button is actually visible, whether AI consent runs before the first request, whether account deletion removes server data.
-3. **Report**: a verdict, blockers first, full checklists per store, and an "outside the code" list. Claude then offers to apply the fixes.
+3. **Report**: a verdict, blockers first, full checklists per store, and an "outside the code" list, saved as Markdown plus the visual `report.html` (re-rendered with Claude's verified corrections). Claude then offers to apply the fixes.
 
 ### Built to avoid false passes
 
@@ -97,6 +97,8 @@ Run only the scanner:
 ```bash
 python3 skills/store-readiness-audit/scripts/scan_app.py path/to/app --store both --out audit
 ```
+
+Then open `audit/report.html` in a browser. After editing `audit/report.json`, add `--render` to rebuild the reports without rescanning.
 
 Requirements: Python 3.8+. [Pillow](https://pypi.org/project/pillow/) is optional and enables the icon checks.
 

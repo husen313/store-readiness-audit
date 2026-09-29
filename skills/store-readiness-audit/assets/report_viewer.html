@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Store Readiness Report</title>
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f1f3f6; --text: #16181d; --muted: #5d6573; --line: #e2e5ea;
+  --fail: #c4302b; --fail-bg: #fdecea; --warn: #a15c00; --warn-bg: #fff4e0; --manual: #2c5fb8; --manual-bg: #e9f0fc;
+  --pass: #1d7a45; --pass-bg: #e6f5ec; --na: #6b7280; --na-bg: #eef0f3; --accent: #2c5fb8;
+  --radius: 12px; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115; --surface: #181b21; --surface-2: #20242c; --text: #e8eaee; --muted: #9aa3b2; --line: #2a2f38;
+    --fail: #ff6b63; --fail-bg: #3a1a19; --warn: #ffb547; --warn-bg: #3a2a10; --manual: #7aa7ff; --manual-bg: #1a2640;
+    --pass: #4cc47f; --pass-bg: #15301f; --na: #9aa3b2; --na-bg: #242830; --accent: #7aa7ff; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115; --surface: #181b21; --surface-2: #20242c; --text: #e8eaee; --muted: #9aa3b2; --line: #2a2f38;
+  --fail: #ff6b63; --fail-bg: #3a1a19; --warn: #ffb547; --warn-bg: #3a2a10; --manual: #7aa7ff; --manual-bg: #1a2640;
+  --pass: #4cc47f; --pass-bg: #15301f; --na: #9aa3b2; --na-bg: #242830; --accent: #7aa7ff; --shadow: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+h1 { font-size: 22px; margin: 0; }
+h2 { font-size: 17px; margin: 32px 0 12px; }
+.meta { color: var(--muted); font-size: 13px; }
+.editor { font-size: 13px; color: var(--muted); }
+select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; }
+.verdict { border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
+.verdict b { display: block; font-size: 24px; line-height: 1.25; }
+.verdict span { display: block; margin-top: 4px; }
+.v-fail { background: var(--fail-bg); color: var(--fail); }
+.v-warn { background: var(--warn-bg); color: var(--warn); }
+.v-pass { background: var(--pass-bg); color: var(--pass); }
+.stores { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.store { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.store-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.store-head b { font-size: 15px; }
+.score { font-size: 13px; color: var(--muted); }
+.bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--surface-2); margin: 10px 0 8px; gap: 2px; }
+.bar i { display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 14px; }
+.chip { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  border-radius: 99px; padding: 5px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.chip .n { opacity: .65; margin-left: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.card summary { list-style: none; cursor: pointer; display: flex; gap: 10px; align-items: flex-start; }
+.card summary::-webkit-details-marker { display: none; }
+.card summary::after { content: "▸"; margin-left: auto; color: var(--muted); transition: transform .15s; }
+.card[open] summary::after { transform: rotate(90deg); }
+.pill { flex: none; font-size: 12px; font-weight: 600; border-radius: 99px; padding: 2px 9px; background: var(--cbg); color: var(--c); white-space: nowrap; }
+.t { font-weight: 600; }
+.sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.body { margin-top: 12px; padding-left: 2px; }
+.row { margin-top: 10px; }
+.label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 3px; }
+.evidence { font-size: 13.5px; overflow-wrap: anywhere; }
+.evidence a { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.fix { position: relative; background: var(--surface-2); border-radius: 8px; padding: 10px 76px 10px 12px; font-size: 13.5px; overflow-wrap: anywhere; }
+.copy { position: absolute; top: 8px; right: 8px; font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--text); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+.note { font-size: 13.5px; background: var(--manual-bg); color: var(--text); border-radius: 8px; padding: 8px 12px; }
+.empty { color: var(--muted); padding: 16px; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); }
+.todo { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 16px; box-shadow: var(--shadow); }
+.todo label { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.todo label:last-child { border-bottom: 0; }
+.todo input { margin-top: 4px; accent-color: var(--pass); }
+.todo input:checked + span { color: var(--muted); text-decoration: line-through; }
+.todo .tag { font-size: 11px; color: var(--muted); margin-left: 6px; }
+footer { margin-top: 32px; font-size: 12px; color: var(--muted); }
+@media (max-width: 560px) { .verdict b { font-size: 20px; } .fix { padding-right: 12px; padding-bottom: 38px; } .copy { top: auto; bottom: 8px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="title">Store readiness report</h1>
+      <div class="meta" id="meta"></div>
+    </div>
+    <label class="editor">Open files in
+      <select id="editor">
+        <option value="vscode">VS Code</option>
+        <option value="cursor">Cursor</option>
+        <option value="windsurf">Windsurf</option>
+        <option value="">Don't link</option>
+      </select>
+    </label>
+  </header>
+
+  <div id="verdict" class="verdict"></div>
+  <div id="stores" class="stores"></div>
+
+  <h2>Checks</h2>
+  <div class="controls" id="filters"></div>
+  <div class="controls" id="storeFilters"></div>
+  <div id="list"></div>
+
+  <h2>Before you press Submit (outside the code)</h2>
+  <div class="meta" style="margin:-6px 0 10px">Things the scanner can't see. Tick them off as you go; your ticks are saved in this browser.</div>
+  <div class="todo" id="todo"></div>
+
+  <footer>Automated pre-submission check by store-readiness-audit. Not affiliated with Apple or Google. A clean report reduces rejection risk but does not guarantee approval — the stores' current guidelines are the final authority.</footer>
+</div>
+
+<script>
+const DATA = /*__REPORT_DATA__*/null;
+
+const S = {
+  FAIL:   { label: "Blocker",       short: "Blockers",      c: "var(--fail)",   bg: "var(--fail-bg)" },
+  WARN:   { label: "Warning",       short: "Warnings",      c: "var(--warn)",   bg: "var(--warn-bg)" },
+  MANUAL: { label: "Check yourself", short: "Check yourself", c: "var(--manual)", bg: "var(--manual-bg)" },
+  PASS:   { label: "Passed",        short: "Passed",        c: "var(--pass)",   bg: "var(--pass-bg)" },
+  "N/A":  { label: "Not needed",    short: "Not needed",    c: "var(--na)",     bg: "var(--na-bg)" },
+};
+const ORDER = ["FAIL", "WARN", "MANUAL", "PASS", "N/A"];
+const STORE_NAME = { iOS: "App Store", Android: "Google Play" };
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const el = id => document.getElementById(id);
+
+const results = DATA.results;
+const inStore = (r, s) => r.store === s || r.store === "Both";
+const count = (list, st) => list.filter(r => r.status === st).length;
+
+// Header
+document.title = `Store readiness — ${DATA.app}`;
+el("title").textContent = `Store readiness — ${DATA.app}`;
+el("meta").textContent = `${DATA.date} · ${DATA.stores.map(s => STORE_NAME[s]).join(" + ")} · ${results.length} checks`;
+
+// Verdict
+const fails = count(results, "FAIL"), warns = count(results, "WARN") + count(results, "MANUAL");
+const v = el("verdict");
+if (fails) {
+  v.className = "verdict v-fail";
+  v.innerHTML = `<b>❌ Not ready — ${fails} blocker${fails > 1 ? "s" : ""}</b><span>These will very likely get the app rejected. Fix them first, they're listed at the top.</span>`;
+} else if (warns) {
+  v.className = "verdict v-warn";
+  v.innerHTML = `<b>⚠️ Ready with warnings</b><span>No blockers found. Review the ${warns} warning${warns > 1 ? "s" : ""} below before you submit.</span>`;
+} else {
+  v.className = "verdict v-pass";
+  v.innerHTML = `<b>✅ Ready to submit</b><span>Every automated check passed. Finish the "outside the code" list below.</span>`;
+}
+
+// Store cards
+el("stores").innerHTML = DATA.stores.map(s => {
+  const list = results.filter(r => inStore(r, s));
+  const applicable = list.filter(r => r.status !== "N/A");
+  const passed = count(list, "PASS");
+  const bar = ORDER.filter(st => st !== "N/A").map(st => {
+    const n = count(list, st);
+    return n ? `<i style="flex:${n};background:${S[st].c}" title="${S[st].short}: ${n}"></i>` : "";
+  }).join("");
+  const legend = ORDER.filter(st => st !== "N/A" && count(list, st)).map(st =>
+    `<span><span class="dot" style="background:${S[st].c}"></span>${count(list, st)} ${S[st].short.toLowerCase()}</span>`).join("");
+  return `<div class="store"><div class="store-head"><b>${STORE_NAME[s]}</b><span class="score">${passed} of ${applicable.length} passed</span></div>
+    <div class="bar">${bar}</div><div class="legend">${legend}</div></div>`;
+}).join("");
+
+// Filters
+const FILTERS = [
+  ["todo", "Needs attention", r => ["FAIL", "WARN", "MANUAL"].includes(r.status)],
+  ["FAIL", "Blockers", r => r.status === "FAIL"],
+  ["WARN", "Warnings", r => r.status === "WARN"],
+  ["MANUAL", "Check yourself", r => r.status === "MANUAL"],
+  ["PASS", "Passed", r => r.status === "PASS"],
+  ["all", "All", r => true],
+];
+let filter = "todo", storeFilter = "all";
+const storeOpts = DATA.stores.length > 1 ? [["all", "Both stores"], ...DATA.stores.map(s => [s, STORE_NAME[s]])] : [];
+
+function renderControls() {
+  const pool = results.filter(r => storeFilter === "all" || inStore(r, storeFilter));
+  el("filters").innerHTML = FILTERS.map(([k, label, fn]) =>
+    `<button class="chip" data-f="${k}" aria-pressed="${k === filter}">${label}<span class="n">${pool.filter(fn).length}</span></button>`).join("");
+  el("storeFilters").innerHTML = storeOpts.map(([k, label]) =>
+    `<button class="chip" data-s="${k}" aria-pressed="${k === storeFilter}">${label}</button>`).join("");
+}
+el("filters").onclick = e => { const b = e.target.closest("[data-f]"); if (b) { filter = b.dataset.f; render(); } };
+el("storeFilters").onclick = e => { const b = e.target.closest("[data-s]"); if (b) { storeFilter = b.dataset.s; render(); } };
+
+// Editor links
+const editorSel = el("editor");
+editorSel.value = store.get("sra-editor", "vscode");
+editorSel.onchange = () => { store.set("sra-editor", editorSel.value); render(); };
+const PATH_RE = /((?:[\w.@-]+\/)*[\w.@-]+\.(?:dart|xml|plist|kts|gradle|ya?ml|json|xcprivacy|png|pbxproj|arb|entitlements|properties|html))(?::(\d+))?/g;
+function linkify(text) {
+  const scheme = editorSel.value;
+  const safe = esc(text);
+  if (!scheme) return safe;
+  return safe.replace(PATH_RE, (m, path, line) => {
+    const abs = path.startsWith("/") ? path : `${DATA.root}/${path}`;
+    return `<a href="${scheme}://file${encodeURI(abs)}${line ? ":" + line : ""}" title="Open in editor">${m}</a>`;
+  });
+}
+
+// Cards
+function card(r, i) {
+  const s = S[r.status] || S["N/A"];
+  const open = r.status === "FAIL" ? " open" : "";
+  const where = r.store === "Both" ? "Both stores" : STORE_NAME[r.store] || r.store;
+  const rows = [];
+  if (r.why) rows.push(`<div class="row"><div class="label">Why it matters</div>${esc(r.why)}</div>`);
+  if (r.evidence) rows.push(`<div class="row"><div class="label">What we found</div><div class="evidence">${linkify(r.evidence)}</div></div>`);
+  if (r.note) rows.push(`<div class="row"><div class="label">Verified in code</div><div class="note">${linkify(r.note)}</div></div>`);
+  if (r.fix && r.status !== "PASS" && r.status !== "N/A")
+    rows.push(`<div class="row"><div class="label">How to fix</div><div class="fix">${esc(r.fix)}<button class="copy" data-i="${i}">Copy</button></div></div>`);
+  else if (r.fix) rows.push(`<div class="row"><div class="label">Tip</div>${esc(r.fix)}</div>`);
+  return `<details class="card" style="--c:${s.c};--cbg:${s.bg}"${open}>
+    <summary><span class="pill">${s.label}</span><div><div class="t">${esc(r.plain || r.title)}</div>
+    <div class="sub">${esc(r.id)} · ${esc(where)} · ${esc(r.guideline)}</div></div></summary>
+    <div class="body">${rows.join("")}</div></details>`;
+}
+let shown = [];
+function render() {
+  renderControls();
+  const fn = FILTERS.find(f => f[0] === filter)[2];
+  shown = results
+    .filter(r => (storeFilter === "all" || inStore(r, storeFilter)) && fn(r))
+    .sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status) || a.id.localeCompare(b.id));
+  el("list").innerHTML = shown.length ? shown.map(card).join("")
+    : `<div class="empty">${filter === "todo" ? "🎉 Nothing needs attention here." : "No checks in this group."}</div>`;
+}
+el("list").onclick = e => {
+  const b = e.target.closest(".copy"); if (!b) return;
+  const done = () => { b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1200); };
+  navigator.clipboard?.writeText(shown[b.dataset.i].fix).then(done, () => {});
+};
+render();
+
+// Outside-the-code checklist
+const TODO = [
+  ["Both", "Privacy policy and support URLs are live and open without logging in"],
+  ["Both", "Screenshots are taken from the real release build, not mockups of features that don't exist"],
+  ["Both", "Demo account + step-by-step instructions added for reviewers (if the app has a login)"],
+  ["Both", "Age / content rating questionnaire answered honestly"],
+  ["iOS", "App Privacy labels in App Store Connect match every SDK that collects data"],
+  ["iOS", "App Review notes explain what makes the app unique (avoids guideline 4.3 spam rejections)"],
+  ["iOS", "In-app purchase products are created and submitted together with this build"],
+  ["Android", "Data safety form matches every SDK that collects data"],
+  ["Android", "Account deletion web link added in the Data safety section (if users can sign up)"],
+  ["Android", "App access: login instructions for reviewers in Play Console"],
+  ["Android", "Target audience, ads declaration and content rating completed"],
+  ["Android", "New personal developer account: closed test with 12+ testers for 14 days before production"],
+];
+const todoKey = `sra-todo-${DATA.app}`;
+const ticked = store.get(todoKey, {});
+el("todo").innerHTML = TODO.filter(([s]) => s === "Both" || DATA.stores.includes(s)).map(([s, text], i) =>
+  `<label><input type="checkbox" data-k="${esc(text)}"${ticked[text] ? " checked" : ""}><span>${esc(text)}${s !== "Both" ? `<span class="tag">${STORE_NAME[s]}</span>` : ""}</span></label>`).join("");
+el("todo").onchange = e => { ticked[e.target.dataset.k] = e.target.checked; store.set(todoKey, ticked); };
+</script>
+</body>
+</html>

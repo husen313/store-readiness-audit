@@ -4,8 +4,9 @@ Store readiness scanner for Flutter apps (App Store + Google Play).
 
 Usage:
     python3 scan_app.py <project-root> [--store ios|android|both] [--out DIR]
+    python3 scan_app.py <project-root> --out DIR --render   # rebuild md/html from an edited report.json
 
-Writes <out>/report.json and <out>/report.md and prints a summary.
+Writes <out>/report.json, report.md and report.html (open in a browser) and prints a summary.
 Heuristic, text-based checks: a strong first pass that the model then verifies.
 """
 import argparse
@@ -13,6 +14,7 @@ import json
 import plistlib
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 PASS, FAIL, WARN, MANUAL, NA = "PASS", "FAIL", "WARN", "MANUAL", "N/A"
@@ -20,10 +22,52 @@ ICON = {PASS: "✅", FAIL: "❌", WARN: "⚠️", MANUAL: "🔍", NA: "➖"}
 
 results = []
 
+# Beginner-friendly name + why the store cares, shown in report.html.
+PLAIN = {
+    "IOS-000": ("iOS project exists", "Without the ios/ folder there's nothing to build for the App Store."),
+    "IOS-001": ("Info.plist can be read", "Info.plist holds your app's settings; if it's broken, Xcode can't build a valid app."),
+    "IOS-002": ("Real bundle ID (not com.example)", "App Store Connect rejects placeholder IDs, and the ID can never be changed after release."),
+    "IOS-010": ("Clear reason for every permission popup", "Apple rejects apps whose camera, photo, location etc. popups are missing or vague about why."),
+    "IOS-011": ("Privacy manifest file", "Apple blocks uploads that use certain SDKs or APIs without a PrivacyInfo.xcprivacy file."),
+    "IOS-012": ("Encryption question answered", "Without this key, App Store Connect asks about encryption on every build and holds it until you answer."),
+    "IOS-013": ("Secure (HTTPS) connections", "Turning off App Transport Security for all sites needs a justification or review may reject it."),
+    "IOS-020": ("Sign in with Apple offered next to Google/Facebook login", "Apple requires an equally private login option whenever you offer third-party login."),
+    "IOS-021": ("Ask before tracking (ATT popup)", "Apps that track users for ads must show Apple's tracking permission popup first."),
+    "IOS-022": ("Push notifications set up", "Push needs the matching capability in Xcode or notifications silently fail for reviewers."),
+    "IOS-023": ("Firebase set up for iOS", "Missing Firebase config makes the app crash on launch, an instant rejection."),
+    "IOS-030": ("1024×1024 App Store icon", "Upload fails without a 1024 px icon, and it must not have a transparent background."),
+    "IOS-031": ("Your own app icon (not Flutter's)", "Shipping the default Flutter logo looks unfinished and gets rejected."),
+    "IOS-032": ("Background modes are really used", "Declaring background audio/location etc. that the app doesn't use is a common rejection."),
+    "AND-000": ("Android project exists", "Without android/app there's nothing to build for Google Play."),
+    "AND-001": ("Real application ID (not com.example)", "Play doesn't accept com.example IDs, and the ID can never be changed after release."),
+    "AND-002": ("Targets a recent Android version", "Google Play refuses new uploads that target an old Android API level."),
+    "AND-003": ("Release build signed with your own key", "Play rejects builds signed with the debug key."),
+    "AND-004": ("Release build isn't debuggable", "Play rejects debuggable release builds because they're a security risk."),
+    "AND-005": ("Secure (HTTPS) connections", "Allowing plain HTTP everywhere exposes user data and draws policy warnings."),
+    "AND-010": ("Only permissions you truly need", "Sensitive permissions (SMS, photos, location…) need a Play Console declaration or get rejected."),
+    "AND-011": ("Advertising ID declared for ads", "Ads SDKs need the AD_ID permission, or ads and attribution break on Android 13+."),
+    "AND-012": ("Firebase set up for Android", "Missing Firebase config makes the app crash on launch."),
+    "AND-020": ("Your own app icon (not Flutter's)", "The default Flutter logo looks unfinished and can break Play's metadata policy."),
+    "GEN-001": ("Version and build number", "Every upload needs a new build number, or the store rejects the file."),
+    "GEN-010": ("Users can delete their account in the app", "Both stores require in-app account deletion whenever users can sign up."),
+    "GEN-011": ("Privacy policy link inside the app", "Both stores require a privacy policy users can open from within the app."),
+    "GEN-020": ("\"Restore Purchases\" button", "Apple rejects apps with purchases that don't let users restore them on a new device."),
+    "GEN-021": ("Terms + Privacy links on the paywall", "Apple rejects subscription screens that don't link to Terms of Use and Privacy Policy."),
+    "GEN-022": ("Digital items sold via the store's billing", "Selling digital content through Stripe/PayPal instead of in-app purchase is rejected."),
+    "GEN-030": ("Ask before sending data to AI services", "Apple requires consent before personal data goes to a third-party AI like OpenAI or Gemini."),
+    "GEN-031": ("Users can report bad AI or user content", "Both stores require a way to flag offensive generated or user-posted content."),
+    "GEN-032": ("No secret API keys inside the app", "Keys in the app can be extracted in minutes and abused on your bill."),
+    "GEN-040": ("No placeholder text left", "\"Lorem ipsum\" or \"TODO\" on screen makes reviewers reject the app as incomplete."),
+    "GEN-041": ("No debug stuff in release", "Test servers, debug banners or dev menus in release builds get rejected."),
+    "GEN-050": ("More than just a website", "Apps that only wrap a website are rejected for minimum functionality."),
+    "GEN-060": ("Reviewer can log in (demo account)", "If reviewers can't get past the login screen, the app is rejected."),
+}
+
 
 def add(cid, store, title, guideline, status, evidence="", fix=""):
+    plain, why = PLAIN.get(cid, (title, ""))
     results.append(dict(id=cid, store=store, title=title, guideline=guideline,
-                        status=status, evidence=evidence, fix=fix))
+                        status=status, evidence=evidence, fix=fix, plain=plain, why=why))
 
 
 # ---------------------------------------------------------------- helpers
@@ -721,9 +765,18 @@ def shared_checks(root, deps, dfiles, stores):
 
 
 # --------------------------------------------------------------- report
+def write_html(root, out, stores):
+    template = (Path(__file__).resolve().parent.parent / "assets" / "report_viewer.html").read_text()
+    data = dict(app=root.name, root=root.as_posix(), stores=stores,
+                date=date.today().isoformat(), results=results)
+    blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    (out / "report.html").write_text(template.replace("/*__REPORT_DATA__*/null", blob))
+
+
 def write_report(root, out, stores):
     out.mkdir(parents=True, exist_ok=True)
     (out / "report.json").write_text(json.dumps(results, indent=2, ensure_ascii=False))
+    write_html(root, out, stores)
     order = {FAIL: 0, WARN: 1, MANUAL: 2, PASS: 3, NA: 4}
     lines = [f"# Scanner results — {root.name}", ""]
     counts = {s: sum(1 for r in results if r["status"] == s) for s in order}
@@ -744,6 +797,8 @@ def main():
     ap.add_argument("root")
     ap.add_argument("--store", choices=["ios", "android", "both"], default="both")
     ap.add_argument("--out", default="audit")
+    ap.add_argument("--render", action="store_true",
+                    help="skip scanning; rebuild report.md/report.html from an edited <out>/report.json")
     a = ap.parse_args()
     root = Path(a.root).resolve()
     if not (root / "pubspec.yaml").exists():
@@ -752,18 +807,39 @@ def main():
         if not cand:
             sys.exit("pubspec.yaml not found — is this a Flutter project?")
         root = sorted(cand, key=lambda c: len(c.parts))[0].parent
-    deps = parse_deps(read(root / "pubspec.yaml"))
-    dfiles = dart_files(root)
     stores = ["iOS", "Android"] if a.store == "both" else (["iOS"] if a.store == "ios" else ["Android"])
-    if "iOS" in stores:
-        ios_checks(root, deps, dfiles)
-    if "Android" in stores:
-        android_checks(root, deps)
-    shared_checks(root, deps, dfiles, stores)
+    if a.render:
+        results.extend(json.loads((Path(a.out) / "report.json").read_text()))
+        seen = {r["store"] for r in results}
+        stores = [s for s in ("iOS", "Android") if s in seen or "Both" in seen]
+    else:
+        deps = parse_deps(read(root / "pubspec.yaml"))
+        dfiles = dart_files(root)
+        if "iOS" in stores:
+            ios_checks(root, deps, dfiles)
+        if "Android" in stores:
+            android_checks(root, deps)
+        shared_checks(root, deps, dfiles, stores)
+        print(f"Project: {root}\nDependencies: {len(deps)} | Dart files: {len(dfiles)}")
     counts = write_report(root, Path(a.out), stores)
-    print(f"Project: {root}\nDependencies: {len(deps)} | Dart files: {len(dfiles)}")
+    print_summary(counts)
+    print(f"Report: {Path(a.out) / 'report.html'}  (also report.md, report.json)")
+
+
+def print_summary(counts):
+    color = sys.stdout.isatty()
+    paint = lambda code, s: f"\033[{code}m{s}\033[0m" if color else s
+    if counts[FAIL]:
+        verdict = paint("1;31", f"❌ NOT READY — {counts[FAIL]} blocker{'s' * (counts[FAIL] > 1)}")
+    elif counts[WARN] or counts[MANUAL]:
+        verdict = paint("1;33", "⚠️  READY WITH WARNINGS")
+    else:
+        verdict = paint("1;32", "✅ READY")
+    print(f"\n{verdict}")
     print("  ".join(f"{ICON[s]} {s}: {n}" for s, n in counts.items()))
-    print(f"Report: {Path(a.out) / 'report.md'}")
+    for r in results:
+        if r["status"] == FAIL:
+            print(f"  {paint('31', '✗')} {r['id']}  {r.get('plain') or r['title']}")
 
 
 if __name__ == "__main__":
