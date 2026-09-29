@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install pillow
+      - run: python3 tests/run_tests.py
+
+  release:
+    # Push a tag like v1.0.1 to publish a .skill file for claude.ai users
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tools/package_skill.sh
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/store-readiness-audit.skill
+          generate_release_notes: true
